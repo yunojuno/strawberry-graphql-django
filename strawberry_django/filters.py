@@ -118,9 +118,9 @@ def build_filter_kwargs(filters):
     return filter_kwargs, filter_methods
 
 
-def apply(filters, queryset, pk=UNSET):
-    if pk is not UNSET:
-        queryset = queryset.filter(pk=pk)
+def apply(filters, queryset, lookup_key, lookup_key_value=UNSET):
+    if lookup_key_value is not UNSET:
+        queryset = queryset.filter(**{lookup_key: lookup_key_value})
 
     if (
         filters is UNSET
@@ -142,8 +142,12 @@ def apply(filters, queryset, pk=UNSET):
 
 
 class StrawberryDjangoFieldFilters:
-    def __init__(self, filters=UNSET, **kwargs):
+    def __init__(
+        self, filters=UNSET, lookup_key=UNSET, lookup_key_type=UNSET, **kwargs
+    ):
         self.filters = filters
+        self.lookup_key = lookup_key
+        self.lookup_key_type = lookup_key_type
         super().__init__(**kwargs)
 
     @property
@@ -153,20 +157,46 @@ class StrawberryDjangoFieldFilters:
             filters = self.get_filters()
             if self.django_model and not self.is_list:
                 if self.is_relation is False:
-                    arguments.append(argument("pk", strawberry.ID))
+                    arguments.append(
+                        argument(
+                            self.get_lookup_key(),
+                            self.get_lookup_key_type(),
+                            is_optional=False,
+                        )
+                    )
             elif filters and filters is not UNSET:
                 arguments.append(argument("filters", filters))
         return super().arguments + arguments
 
+    def get_lookup_key(self):
+        if self.lookup_key is not UNSET:
+            return self.lookup_key
+
+        type_ = utils.unwrap_type(self.type or self.child.type)
+        if utils.is_django_type(type_):
+            return type_._django_type.lookup_key
+
+    def get_lookup_key_type(self):
+        if self.lookup_key_type is not UNSET:
+            return self.lookup_key_type
+
+        type_ = utils.unwrap_type(self.type or self.child.type)
+        if utils.is_django_type(type_):
+            return type_._django_type.lookup_key_type
+
     def get_filters(self):
         if self.filters is not UNSET:
             return self.filters
-        type_ = utils.unwrap_type(self.type or self.child.type)
 
+        type_ = utils.unwrap_type(self.type or self.child.type)
         if utils.is_django_type(type_):
             return type_._django_type.filters
         return None
 
-    def get_queryset(self, queryset, info, pk=UNSET, filters=UNSET, **kwargs):
+    def get_queryset(self, queryset, info, filters=UNSET, **kwargs):
         queryset = super().get_queryset(queryset, info, **kwargs)
-        return apply(filters, queryset, pk)
+        lookup_key = self.get_lookup_key()
+        lookup_key_value = kwargs.get(lookup_key)
+        return apply(
+            filters, queryset, lookup_key=lookup_key, lookup_key_value=lookup_key_value
+        )
