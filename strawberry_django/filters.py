@@ -196,7 +196,7 @@ class StrawberryDjangoFieldFilters:
     def get_queryset(self, queryset, info, filters=UNSET, **kwargs):
         queryset = super().get_queryset(queryset, info, **kwargs)
         lookup_key = self.get_lookup_key()
-        lookup_key_value = kwargs.get(lookup_key)
+        lookup_key_value = kwargs.get(lookup_key, UNSET)
         return apply(
             filters, queryset, lookup_key=lookup_key, lookup_key_value=lookup_key_value
         )
