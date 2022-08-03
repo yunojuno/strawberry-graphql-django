@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Optional, TypeVar
 
 import django
 import strawberry
@@ -124,8 +124,9 @@ class StrawberryDjangoType:
     is_partial: bool
     is_filter: bool
     filters: Any
-    lookup_key: str
-    lookup_key_type: Type
+    lookup_key: Any
+    lookup_key_django_name: Any
+    lookup_key_type: Any
     order: Any
     pagination: Any
     field_cls: StrawberryDjangoFieldType
@@ -136,8 +137,9 @@ def process_type(
     model,
     *,
     filters=UNSET,
-    lookup_key="pk",
-    lookup_key_type=strawberry.ID,
+    lookup_key=UNSET,
+    lookup_key_django_name=UNSET,
+    lookup_key_type=UNSET,
     pagination=UNSET,
     order=UNSET,
     field_cls=UNSET,
@@ -145,7 +147,7 @@ def process_type(
 ):
     original_annotations = cls.__dict__.get("__annotations__", {})
 
-    if not field_cls:
+    if not field_cls or field_cls is UNSET:
         field_cls = StrawberryDjangoField
 
     django_type = StrawberryDjangoType(
@@ -156,6 +158,7 @@ def process_type(
         is_filter=kwargs.pop("is_filter", False),
         filters=filters,
         lookup_key=lookup_key,
+        lookup_key_django_name=lookup_key_django_name,
         lookup_key_type=lookup_key_type,
         order=order,
         pagination=pagination,
