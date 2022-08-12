@@ -130,6 +130,7 @@ class StrawberryDjangoType:
     order: Any
     pagination: Any
     field_cls: StrawberryDjangoFieldType
+    return_none_on_permission_error: bool
 
 
 def process_type(
@@ -163,6 +164,9 @@ def process_type(
         order=order,
         pagination=pagination,
         field_cls=field_cls,
+        return_none_on_permission_error=kwargs.pop(
+            "return_none_on_permission_error", UNSET
+        ),
     )
 
     fields = get_fields(django_type)
